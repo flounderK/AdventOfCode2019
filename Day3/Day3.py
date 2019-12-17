@@ -1,3 +1,4 @@
+#!/usr/bin/python
 import re
 from collections import defaultdict
 
@@ -22,6 +23,7 @@ class Grid(object):
         wire_locs = set()
         instruction_set = defaultdict(list)
         instr_count = 1
+        last_dir = None
         # convert the numeric characters to integers
         for direction, amount in map(lambda a: (a[0], int(a[1])),
                                      [re.match(rexp, i).groups() for i in vector_list]):
@@ -38,20 +40,24 @@ class Grid(object):
                 x_mod = True
 
             self.current_loc = (x, y)
+            self.turns.add(self.current_loc)
             # I'm kind of sorry for this, but not enough to change it
             # it is just getting the start and end of what locations are added
             # to this wire
             start, end = (lambda a: (a[0], a[1]) if a[0] < a[1] else (a[1], a[0]))((x, o_x) if x_mod else (y, o_y))
-
-            for i in range(start, end):
+            extra_end = 1 if (last_dir, direction) == ("U", "L") else 0
+            extra_start = -1 if (last_dir, direction) == ("R", "D") else 0
+            print(f"{last_dir} {direction}")
+            for i in range(start + extra_start, end + extra_end):
                 val = (i, y) if x_mod is True else (x, i)
                 # this is preferable to having to make a class that inherits
                 # from defaultdict and ordereddict
-                instruction_set[instr_count].append(val)
-                wire_locs.add(val)
-            self.turns.add(self.current_loc)
+                if val != (0, 0):
+                    instruction_set[instr_count].append(val)
+                    wire_locs.add(val)
             x_mod = False
             instr_count += 1
+            last_dir = direction
 
         self.current_loc = (0, 0)
         self.wire_list.append(wire_locs)
@@ -88,7 +94,7 @@ class Grid(object):
                     break
         return step_list
 
-    def print_grid(self):
+    def print_grid(self, filename="out"):
         for w in self.wire_list:
             self.filled_locs.extend(list(w))
 
@@ -100,7 +106,7 @@ class Grid(object):
         min_y = y_sort[0][1]
         max_y = y_sort[-1][1]
 
-        with open("out", "w") as f:
+        with open(filename, "w") as f:
             for y in range(max_y, min_y - 1, -1):
                 for x in range(min_x, max_x + 1):
                     loc = (x, y)
@@ -109,6 +115,8 @@ class Grid(object):
                             f.write("i")
                         elif loc == (0, 0):
                             f.write("o")
+                        elif loc in self.turns:
+                            f.write("+")
                         else:
                             f.write("x")
                     else:
@@ -116,12 +124,38 @@ class Grid(object):
                 f.write("\n")
 
 
-g = Grid()
-with open("Day3In.txt", "r") as f:
-    g.add_wire(f.readline())
-    g.add_wire(f.readline())
-g.count_intersections()
-p1res = g.closest_intersection
-p2res = g.steps_to_intersections[g.fewest_steps_to_intersection]
-print(f"Part 1: {p1res}")
-print(f"Part 2: {p2res}")
+test_sets = [["R8,U5,L5,D3", "U7,R6,D4,L4", 6, 30],
+             ["R98,U47,R26,D63,R33,U87,L62,D20,R33,U53,R51",
+              "U98,R91,D20,R16,D67,R40,U7,R15,U6,R7", 135, 410],
+             ["R75,D30,R83,U83,L12,D49,R71,U7,L72",
+              "U62,R66,U55,R34,D71,R55,D58,R83", 159, 610]]
+
+for w1, w2, a1, a2 in test_sets:
+    print("Starting new test")
+    g = Grid()
+    g.add_wire(w1)
+    g.add_wire(w2)
+    g.count_intersections()
+    res1 = g.closest_intersection
+    res2 = g.steps_to_intersections[g.fewest_steps_to_intersection]
+    try:
+        assert res1 == a1
+    except:
+        print(f"{res1} != {a1}")
+
+    try:
+        assert res2 == a2
+    except:
+        print(f"{res2} != {a2}")
+        g.print_grid()
+        break
+
+# g = Grid()
+# with open("Day3In.txt", "r") as f:
+#     g.add_wire(f.readline())
+#     g.add_wire(f.readline())
+# g.count_intersections()
+# p1res = g.closest_intersection
+# p2res = g.steps_to_intersections[g.fewest_steps_to_intersection]
+# print(f"Part 1: {p1res}")
+# print(f"Part 2: {p2res}")
