@@ -46,15 +46,24 @@ class Grid(object):
             # to this wire
             start, end = (lambda a: (a[0], a[1]) if a[0] < a[1] else (a[1], a[0]))((x, o_x) if x_mod else (y, o_y))
             extra_end = 1 if (last_dir, direction) == ("U", "L") else 0
-            extra_start = -1 if (last_dir, direction) == ("R", "D") else 0
-            print(f"{last_dir} {direction}")
-            for i in range(start + extra_start, end + extra_end):
+            extra_end += 1 if (last_dir, direction) == ("R", "D") else 0
+            for i in range(start, end + extra_end):
                 val = (i, y) if x_mod is True else (x, i)
-                # this is preferable to having to make a class that inherits
-                # from defaultdict and ordereddict
+                # don't include (0, 0) because it is never stepped to,
+                # only from
                 if val != (0, 0):
-                    instruction_set[instr_count].append(val)
+                    # using ints is preferable to having to make a class that
+                    # inherits from defaultdict and ordereddict
+                    # check to make sure a turn doesn't get added twice
+                    # because locations are not always put in in numeric order
+                    if val not in instruction_set[instr_count - 1]:
+                        instruction_set[instr_count].append(val)
                     wire_locs.add(val)
+
+            # reverse list so that locations occur in correct order
+            # for counting the number of steps it has taken
+            if direction == 'L' or direction == 'D':
+                instruction_set[instr_count].reverse()
             x_mod = False
             instr_count += 1
             last_dir = direction
@@ -87,7 +96,9 @@ class Grid(object):
         for instruction_set in self.instruction_sets:
             for k, v in instruction_set.items():
                 if loc in v:
-                    total_steps = v.index(loc)
+                    total_steps = v.index(loc) + 1
+                    # go through every directional line before the current one
+                    # and get the total number of items
                     for i in range(1, k):
                         total_steps += len(instruction_set[i])
                     step_list.append(total_steps)
@@ -119,43 +130,45 @@ class Grid(object):
                             f.write("+")
                         else:
                             f.write("x")
+                    elif loc == (0, 0):
+                        f.write("o")
                     else:
                         f.write(".")
                 f.write("\n")
 
 
-test_sets = [["R8,U5,L5,D3", "U7,R6,D4,L4", 6, 30],
-             ["R98,U47,R26,D63,R33,U87,L62,D20,R33,U53,R51",
-              "U98,R91,D20,R16,D67,R40,U7,R15,U6,R7", 135, 410],
-             ["R75,D30,R83,U83,L12,D49,R71,U7,L72",
-              "U62,R66,U55,R34,D71,R55,D58,R83", 159, 610]]
+# test_sets = [["R8,U5,L5,D3", "U7,R6,D4,L4", 6, 30],
+#              ["R98,U47,R26,D63,R33,U87,L62,D20,R33,U53,R51",
+#               "U98,R91,D20,R16,D67,R40,U7,R15,U6,R7", 135, 410],
+#              ["R75,D30,R83,U83,L12,D49,R71,U7,L72",
+#               "U62,R66,U55,R34,D71,R55,D58,R83", 159, 610]]
+#
+# for w1, w2, a1, a2 in test_sets:
+#     print("Starting new test")
+#     g = Grid()
+#     g.add_wire(w1)
+#     g.add_wire(w2)
+#     g.count_intersections()
+#     res1 = g.closest_intersection
+#     res2 = g.steps_to_intersections[g.fewest_steps_to_intersection]
+#     try:
+#         assert res1 == a1
+#     except:
+#         print(f"{res1} != {a1}")
+#
+#     try:
+#         assert res2 == a2
+#     except:
+#         print(f"{res2} != {a2}")
+#         g.print_grid()
+#         break
 
-for w1, w2, a1, a2 in test_sets:
-    print("Starting new test")
-    g = Grid()
-    g.add_wire(w1)
-    g.add_wire(w2)
-    g.count_intersections()
-    res1 = g.closest_intersection
-    res2 = g.steps_to_intersections[g.fewest_steps_to_intersection]
-    try:
-        assert res1 == a1
-    except:
-        print(f"{res1} != {a1}")
-
-    try:
-        assert res2 == a2
-    except:
-        print(f"{res2} != {a2}")
-        g.print_grid()
-        break
-
-# g = Grid()
-# with open("Day3In.txt", "r") as f:
-#     g.add_wire(f.readline())
-#     g.add_wire(f.readline())
-# g.count_intersections()
-# p1res = g.closest_intersection
-# p2res = g.steps_to_intersections[g.fewest_steps_to_intersection]
-# print(f"Part 1: {p1res}")
-# print(f"Part 2: {p2res}")
+g = Grid()
+with open("Day3In.txt", "r") as f:
+    g.add_wire(f.readline())
+    g.add_wire(f.readline())
+g.count_intersections()
+p1res = g.closest_intersection
+p2res = g.steps_to_intersections[g.fewest_steps_to_intersection]
+print(f"Part 1: {p1res}")
+print(f"Part 2: {p2res}")
