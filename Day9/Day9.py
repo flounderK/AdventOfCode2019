@@ -220,4 +220,7 @@ content3 = "104,1125899906842624,99"
 e = Emul(content1, inbuf=[1])
 e = Emul(content2, inbuf=[1])
 e = Emul(content3, inbuf=[1])
+print("Part 1:")
 e = Emul(content, inbuf=[1])
+print("Part 2:")
+e = Emul(content, inbuf=[2])
