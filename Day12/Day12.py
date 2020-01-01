@@ -5,7 +5,7 @@ import re
 class Moon(object):
     MOONS = list()
     TOTAL_STEPS = 0
-    PAST_STATES = list()
+    PAST_STATES = dict()
 
     def __init__(self, x, y, z):
         self.x = x
@@ -33,7 +33,8 @@ class Moon(object):
             moon.x += moon.xv
             moon.y += moon.yv
             moon.z += moon.zv
-            moon._save_state()
+
+        cls._save_state()
 
     @staticmethod
     def __find_velocity_mod(moon1, moon2, prop, modprop):
@@ -56,9 +57,18 @@ class Moon(object):
         vel = (self.xv, self.yv, self.zv)
         return (pos, vel)
 
-    def _save_state(self):
-        state = self.get_state()
-        self.__class__.PAST_STATES.append(state)
+    @classmethod
+    def get_class_state(cls):
+        return tuple(map(lambda m: m.get_state(), cls.MOONS))
+
+    @classmethod
+    def _save_state(cls):
+        # use a tuple so that it is not mutable and can be a key in a dict
+        state = cls.get_class_state()
+        if cls.PAST_STATES.get(state) is None:
+            cls.PAST_STATES[state] = 1
+        else:
+            cls.PAST_STATES[state] += 1
 
 
 with open("Day12In.txt", "r") as f:
@@ -96,14 +106,16 @@ for i in range(1, 1001):
 
 p1res = sum([moon.get_total_energy() for moon in Moon.MOONS])
 print(f"Part 1: {p1res}")
-
-state_found_twice = False
-while state_found_twice is False:
-    for m in Moon.MOONS:
-        if m.get_state() in Moon.PAST_STATES:
-            state_found_twice = True
-            break
-    Moon.time_step()
-
-print(f"Part 2: {Moon.TOTAL_STEPS}")
+# This is technically a solution for part 2, but it is very inefficient.
+# I will come back to this, but a better solution would be to find the rate of
+# state repetition for each individual moon, then find the
+# lowest common multiple for all of the moons
+# state_found_twice = False
+# while state_found_twice is False:
+#     Moon.time_step()
+#     if Moon.PAST_STATES[Moon.get_class_state()] > 1:
+#         state_found_twice = True
+#         break
+#
+# print(f"Part 2: {Moon.TOTAL_STEPS}")
 
